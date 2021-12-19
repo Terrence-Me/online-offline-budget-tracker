@@ -1,16 +1,25 @@
-const FILES_TO_CACHE = ["/", "/index.html", "index.js", "/db.js", "/style.css"];
+const FILES_TO_CACHE = [
+  "/",
+  "/db.js",
+  "/index.js",
+  "/manifest.webmanifest",
+  "/styles.css",
+  "/icons/icon-192x192.png",
+  "/icons/icon-512x512.png",
+];
 
-const CACHE_NAME = "static-cache-v2";
-const DATA_CACHE_NAME = "data-cache-v1";
+const CACHE_NAME = "static-cache-v22";
+const DATA_CACHE_NAME = "data-cache-v33";
 
+// install
 self.addEventListener("install", function (evt) {
-  // pre cache all static assets
   evt.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(FILES_TO_CACHE))
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log("Your files were pre-cached successfully!");
+      return cache.addAll(FILES_TO_CACHE);
+    })
   );
 
-  // tell the browser to activate this service worker immediately once it
-  // has finished installing
   self.skipWaiting();
 });
 
@@ -58,11 +67,15 @@ self.addEventListener("fetch", function (evt) {
 
     return;
   }
-
   evt.respondWith(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.match(evt.request).then((response) => {
-        return response || fetch(evt.request);
+    fetch(evt.request).catch(function () {
+      return caches.match(evt.request).then(function (response) {
+        if (response) {
+          return response;
+        } else if (evt.request.headers.get("accept").includes("text/html")) {
+          // return the cached home page for all requests for html pages
+          return caches.match("/");
+        }
       });
     })
   );
